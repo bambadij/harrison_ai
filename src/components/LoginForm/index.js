@@ -8,52 +8,39 @@ import Grid from '@mui/material/Grid';
 import Snackbar from '@mui/material/Snackbar';
 import Typography from '@mui/material/Typography';
 import logo from '../../assets/logo.svg';
-import * as EmailValidator from 'email-validator';
-
+import { validateEmail, validatePassword } from './validation';
 
 export default function LoginForm() {
   const [showAlert, setShowAlert] = useState(false);
-  const [valid,setisValid] = useState(null)
-  const [pwderror,setPwdError]=useState([])
-//  add validation password here
-  const validatePwd = (password)=>{
-    const error =[]
-    if (password.length<8) {
-      error.push('Password must be at least 8 characters')
-    }
-    // here we check if the password contain a lowercase letter
-    if(!/[a-z]/.test(password)){
-      error.push('Password must contain at least one lowercase letter')
-    }
-    // here we check if the password contain a uppercase letter
-    if(!/[A-Z]/.test(password)){
-      error.push('Password must contain at least one uppercase letter')
-    }
-    // here we check if the password contain a numerical digit
-    if(!/\d/.test(password)){
-      error.push('Password must contain at least one numerical digit')
-    }
-    // here we check if the password contain special character
-    if(!/[!@#$%^&*]/.test(password)){
-      error.push('Password must contain at least on special character')
-    }
-    // after return error
-    return error
-  }
-  const validateForm = (event) => {
+  const [showErrorEmail, setShowErrorEmail] = useState(false);
+  const [showErrorPwd, setShowErrorPwd] = useState(false);
+
+  function validateForm(event) {
     event.preventDefault()
     const data = new FormData(event.currentTarget);
     const email = data.get('email');
     const password = data.get('password');
-   
+
     // Add validation code here
-    const isValidEmail = EmailValidator.validate(email);
-    const pwdError =  validatePwd(password)
-    setisValid(isValidEmail)
-    setPwdError(pwdError)
-    if (isValidEmail && pwdError.length===0) {
-      handleSubmit(event)
+
+    const emailValidateResult = validateEmail(email)
+
+    if (!emailValidateResult) {
+      setShowErrorEmail("Please enter valid email address");
+    } else {
+      setShowErrorEmail(false);
     }
+
+    const pwdValidateError = validatePassword(password)
+
+    if (pwdValidateError) {
+      setShowErrorPwd(pwdValidateError);
+    } else {
+      setShowErrorPwd(false);
+    }
+
+    return (emailValidateResult && !pwdValidateError)
+
   }
 
   const handleSubmit = (event) => {
@@ -63,8 +50,9 @@ export default function LoginForm() {
       email: data.get('email'),
       password: data.get('password'),
     });
-    validateForm(event);
-    setShowAlert("Login Successful");
+    if (validateForm(event)) {
+      setShowAlert("Login Successful");
+    }
   };
 
   return (
@@ -113,25 +101,27 @@ export default function LoginForm() {
           </Typography>
           <Box component="form" noValidate onSubmit={handleSubmit} sx={{ mt: 1 }}>
             <TextField
-              error={valid !== null}
+              error={showErrorEmail}
+              helperText={showErrorEmail}
               margin="normal"
               required
               fullWidth
-              id={valid !== null ? "outlined-error":"email"}
+              id="email"
               label="Email Address"
               name="email"
               autoComplete="email"
               autoFocus
             />
             <TextField
-              error={pwderror.length > 0}
+              error={showErrorPwd}
+              helperText={showErrorPwd}
               margin="normal"
               required
               fullWidth
               name="password"
-              label={pwderror.length > 0 ? "Error" : "Password"}
+              label="Password"
               type="password"
-              id={pwderror.length > 0 ? "outlined-error":"password"}
+              id="password"
               autoComplete="current-password"
             />
             <Button
@@ -142,18 +132,6 @@ export default function LoginForm() {
             >
               Sign In
             </Button>
-              {valid !== null && (
-                <ul>
-                  {valid ? '' : 'Invalid email address'}
-                </ul>
-              )}
-            {pwderror.length > 0 && (
-                <ul>
-                  {pwderror.map((error, index) => (
-                    <li key={index}>{error}</li>
-                  ))}
-                </ul>
-              )}
           </Box>
         </Box>
       </Grid>
